@@ -1,0 +1,16 @@
+services:
+  bliss-site:
+    build: .
+    env_file: .env
+    environment:
+      - TLS=true
+    volumes:
+      - ./var:/app/var
+    command: ./app --port 8080
+    
+  cloudflared:
+    restart: unless-stopped
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}

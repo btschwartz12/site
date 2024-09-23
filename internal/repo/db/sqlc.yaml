@@ -1,0 +1,12 @@
+version: 2
+sql:
+  - engine: "sqlite"
+    schema: "sql/schema.sql"
+    queries:
+      - "sql/visitors.sql"
+      - "sql/pictures.sql"
+    gen:
+      go:
+        package: "db"
+        out: "."
+

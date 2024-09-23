@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<style>
+body { background-color: black; color: white; font-family: 'Courier New', Courier, monospace; font-size: 17px; }
+p { display: block; max-width: 50ch; white-space: break-spaces; word-wrap: break-word; }
+a { color: #a9e1ff; text-decoration: none; }
+img { max-width: 200px; height: auto; }
+
+form { 
+    padding: 10px; 
+    display: inline-block;
+    margin-top: -10px;
+    margin-bottom: 15px;
+}
+
+.pictures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.picture-container {
+    background-color: #1a1a1a;
+    padding: 10px;
+    border: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.picture-container img {
+    width: 100%;
+    height: auto;
+}
+
+.description-container {
+    margin-top: auto;
+}
+</style>
+<body>
+<p>add a picture! please don't be mean :)</p>
+<form action="/pics/upload" method="POST" enctype="multipart/form-data">
+<p><input type="file" name="file" accept="image/*" required>
+<input type="text" name="description" required></p>
+<input type="submit" value="upload">
+</form>
+
+<div class="pictures-grid">
+    {{ range .Pictures }}
+    <div class="picture-container">
+        <img src="{{ .Url }}" alt="{{ .Description }}">
+        <div class="description-container">
+            <p>{{ .Description }}</p>
+            <p style="font-size: 10px; color: lightgrey;">added: {{ .Pit }}</p>
+        </div>
+    </div>
+    {{ end }}
+</div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<style>
+body { background-color: black; color: white; font-family: 'Courier New', Courier, monospace; font-size: 17px; }
+p { display: block; max-width: 30ch; white-space: break-spaces; word-wrap: break-word; }
+a { color: #a9e1ff; text-decoration: none; }
+</style>
+<style>
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        transform: scale(1.5);
+    }
+
+    form {
+        margin-bottom: 20px;
+    }
+
+    button {
+        background-color: #282c34;
+        color: #a9e1ff;
+        border: 2px solid #a9e1ff;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+		margin-bottom: 20px;
+    }
+
+    button:hover {
+        background-color: #a9e1ff;
+        color: #282c34;
+    }
+
+    img {
+        max-width: 200px;
+        margin-bottom: 20px;
+    }
+
+</style>
+<body>
+    <form method="post">
+        <button type="submit">encounter</button>
+    </form>
+    {{if .Encounter}}
+        <img src="{{.Encounter.SpritePath}}" alt="Random Pokémon">
+        {{if .Encounter.Shiny}}
+            <p>shiny!</p>
+        {{else}}
+            <p>today's shiny odds: {{ .ShinyOdds }}</p>
+        {{end}}
+    {{else}}
+        <p>today's shiny odds: {{ .ShinyOdds }}</p>
+    {{end}}
+</body>
+</html>

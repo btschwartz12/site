@@ -1,0 +1,42 @@
+version: 1
+questions:
+  - type: TextEntry
+    title: "what is your name?"
+
+  - type: MultipleChoice
+    title: "where are you from?"
+    options:
+      - title: "US - East Coast"
+      - title: "US - Midwest"
+      - title: "US - South"
+      - title: "US - West Coast"
+      - title: "US - Other"
+      - title: "Asia"
+      - title: "Europe"
+      - title: "Other"
+
+  - type: TextEntry
+    title: "describe your mood."
+
+  - type: SelectAllThatApply
+    title: "what belongs on a pizza?"
+    options:
+      - title: "Pepperoni"
+      - title: "Mushrooms"
+      - title: "Onions"
+      - title: "Sausage"
+      - title: "Bacon"
+      - title: "Pineapple"
+      - title: "Extra cheese"
+      - title: "Light cheese"
+      - title: "Spinach"
+
+  - type: MultipleChoice
+    title: "what is the best season of Better Call Saul?"
+    options:
+      - title: "1"
+      - title: "2"
+      - title: "3"
+      - title: "4"
+      - title: "5"
+      - title: "6"

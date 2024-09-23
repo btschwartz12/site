@@ -1,0 +1,113 @@
+{{ define "survey" }}
+
+<script src="/survey/static/js/survey.js"></script>
+
+<form id="surveyForm" oninput="submitSurvey()">
+    {{range .SurveyData.Questions}}
+        <div>
+            {{ $questionID := .ID }}
+            <p style="font-size: 1em; margin-bottom: 8px;"><span class="wrap survey-question">{{.Title}}</span></p>
+            {{if eq .Type "multiple_choice"}}
+                {{range .Options}}
+                    <div>
+                        <input type="radio" name="question_{{$questionID}}" value="{{.Index}}" {{if .Selected}}checked{{end}}>
+                        <label style="font-size: 0.9em;">{{.Title}}</label>
+                    </div>
+                {{end}}
+            {{else if eq .Type "select_all"}}
+                {{range .Options}}
+                    <div>
+                        <input type="checkbox" name="question_{{$questionID}}" value="{{.Index}}" {{if .Selected}}checked{{end}}>
+                        <label style="font-size: 0.9em;">{{.Title}}</label>
+                    </div>
+                {{end}}
+            {{else if eq .Type "text_entry"}}
+                <div>
+                    <textarea name="question_{{$questionID}}" maxlength="200" style="resize: both; width: 200px; height: 17px; background-color: black; color: white; font-size: 0.8em;">{{.Text}}</textarea>
+                </div>
+            {{end}}
+        </div>
+    {{end}}
+</form>
+
+<script> 
+
+
+    var ws = new WebSocket("{{ .WsProtocol }}://" + window.location.host + "/survey/ws");
+
+    ws.onmessage = function(event) {
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(event.data);
+        reader.addEventListener("loadend", function(e) {
+            const surveyUpdateCode = {{ .SurveyUpdateCode }};
+            const numConnectionsCode = {{ .NumConnectionsCode }};
+            
+            const data = new Uint8Array(e.target.result);
+            const messageType = data[0];
+            const messageData = data.slice(1);
+            
+            if (messageType === surveyUpdateCode) {
+                const surveyInstance = new Survey();
+                try { 
+                    surveyInstance.unmarshal(messageData);
+                } catch (error) {
+                    console.error('Failed to unmarshal survey:', error);
+                    return;
+                }
+
+                try {
+                    updateSurvey(surveyInstance);
+                } catch (error) {
+                    console.error('Failed to update survey:', error);
+                }
+            } else if (messageType === numConnectionsCode) {
+                const clientCount = new DataView(messageData.buffer).getUint32(0);
+                document.getElementById('numClients').innerText = clientCount;
+            } else {
+                console.warn('Unknown message type received:', messageType);
+            }
+        });
+    };
+
+</script>
+
+<script>
+    function parseSurvey() {
+        const form = document.getElementById('surveyForm');
+        const formData = new FormData(form);
+        const surveyData = new Survey({{.SurveyData.Version}}, {});
+
+        {{range .SurveyData.Questions}}
+            (function(s) {
+                const questionID = {{.ID}};
+                const questionType = "{{.Type}}";
+                const name = 'question_' + questionID;
+
+                if (questionType === 'multiple_choice') {
+                    const selectedOptionIndex = formData.get(name);
+                    const optionsSelected = [];
+                    {{range .Options}}
+                        optionsSelected.push("{{.Index}}" === selectedOptionIndex);
+                    {{end}}
+                    const q = new MultipleChoiceQuestion(optionsSelected);
+                    surveyData.questions[questionID] = q;
+                } else if (questionType === 'select_all') {
+                    const selectedOptions = formData.getAll(name);
+                    const optionsSelected = [];
+                    {{range .Options}}
+                        optionsSelected.push(selectedOptions.includes("{{.Index}}"));
+                    {{end}}
+                    const q = new SelectAllThatApplyQuestion(optionsSelected);
+                    surveyData.questions[questionID] = q;
+                } else if (questionType === 'text_entry') {
+                    const text = formData.get(name) || '';
+                    const q = new TextEntryQuestion(text);
+                    surveyData.questions[questionID] = q;
+                }
+            })(surveyData);
+        {{end}}
+
+        return surveyData;
+    }
+</script>
+{{ end }}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<style>
+body { background-color: black; color: white; font-family: 'Courier New', Courier, monospace; font-size: 17px; }
+p { display: block; max-width: 55ch; white-space: break-spaces; word-wrap: break-word; }
+.survey-question { color: #5bf88f }
+.survey-note .tooltip { background-color: #1c2222; }
+</style>
+<body>
+    <p style="color: lightblue;">keep in mind, <span style="color: red;">everyone can see your answers</span>!</p>
+    {{ template "survey" . }}
+<p style="color: lightblue;">~
+
+thanks for your input!
+</p>
+<p style="color: lightblue; border: 1px solid lightblue; padding: 10px; font-size: 0.9em;" >note: the above survey is a complete rip-off of <a href="https://en.wikipedia.org/wiki/One_Million_Checkboxes" style="color: white;">onemillioncheckboxes</a>.
+
+if you aren't familiar, basically whenever you make a change, it appears for everyone else too.
+
+including you, there are <span id="numClients">0</span> user(s) editing this survey right now!</p>
+</body>
+</html>

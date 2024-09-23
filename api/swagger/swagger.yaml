@@ -1,0 +1,109 @@
+basePath: /
+definitions:
+  repo.Picture:
+    properties:
+      description:
+        type: string
+      extension:
+        type: string
+      id:
+        type: integer
+      pit:
+        type: string
+      url:
+        type: string
+    type: object
+  repo.Visitor:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      id:
+        type: integer
+      ip:
+        type: string
+      message:
+        type: string
+      path:
+        type: string
+      pit:
+        type: string
+      region:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Your API Description
+  title: Your API Title
+  version: "1.0"
+paths:
+  /api/pics/delete/{id}:
+    delete:
+      description: Delete a picture
+      parameters:
+      - description: Picture ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Delete a picture
+      tags:
+      - pictures
+  /api/pics/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a picture
+      parameters:
+      - description: Picture file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Description of the picture
+        in: formData
+        name: description
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.Picture'
+      security:
+      - Bearer: []
+      summary: Upload a picture
+      tags:
+      - pictures
+  /api/visitors:
+    get:
+      description: Get the visitors
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.Visitor'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get visitors
+      tags:
+      - visitors
+securityDefinitions:
+  Bearer:
+    description: Please provide a valid api token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
