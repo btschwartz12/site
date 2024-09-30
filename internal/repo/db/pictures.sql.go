@@ -27,7 +27,7 @@ func (q *Queries) DeletePicture(ctx context.Context, id int64) (string, error) {
 
 const getAllPictures = `-- name: GetAllPictures :many
 SELECT
-    id, url, description, extension, pit
+    id, author, url, description, extension, pit
 FROM
     pictures
 `
@@ -43,6 +43,7 @@ func (q *Queries) GetAllPictures(ctx context.Context) ([]Picture, error) {
 		var i Picture
 		if err := rows.Scan(
 			&i.ID,
+			&i.Author,
 			&i.Url,
 			&i.Description,
 			&i.Extension,
@@ -63,7 +64,7 @@ func (q *Queries) GetAllPictures(ctx context.Context) ([]Picture, error) {
 
 const getPicture = `-- name: GetPicture :one
 SELECT
-    id, url, description, extension, pit
+    id, author, url, description, extension, pit
 FROM
     pictures
 WHERE
@@ -75,6 +76,7 @@ func (q *Queries) GetPicture(ctx context.Context, id int64) (Picture, error) {
 	var i Picture
 	err := row.Scan(
 		&i.ID,
+		&i.Author,
 		&i.Url,
 		&i.Description,
 		&i.Extension,
@@ -85,24 +87,31 @@ func (q *Queries) GetPicture(ctx context.Context, id int64) (Picture, error) {
 
 const insertPicture = `-- name: InsertPicture :one
 INSERT INTO
-    pictures (url, extension, description)
+    pictures (url, author, extension, description)
 VALUES
-    (?, ?, ?)
+    (?, ?, ?, ?)
 RETURNING
-    id, url, description, extension, pit
+    id, author, url, description, extension, pit
 `
 
 type InsertPictureParams struct {
 	Url         string
+	Author      string
 	Extension   string
 	Description string
 }
 
 func (q *Queries) InsertPicture(ctx context.Context, arg InsertPictureParams) (Picture, error) {
-	row := q.db.QueryRowContext(ctx, insertPicture, arg.Url, arg.Extension, arg.Description)
+	row := q.db.QueryRowContext(ctx, insertPicture,
+		arg.Url,
+		arg.Author,
+		arg.Extension,
+		arg.Description,
+	)
 	var i Picture
 	err := row.Scan(
 		&i.ID,
+		&i.Author,
 		&i.Url,
 		&i.Description,
 		&i.Extension,

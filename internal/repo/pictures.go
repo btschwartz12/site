@@ -27,21 +27,29 @@ var (
 
 type Picture struct {
 	ID          int64
+	Author      string
 	Url         string
 	Description string
 	Extension   string
-	Pit         string
+	Pit         time.Time
 }
 
 func (p *Picture) fromDb(row *db.Picture) {
 	p.ID = row.ID
+	p.Author = row.Author
 	p.Url = row.Url
 	p.Description = row.Description
 	p.Extension = row.Extension
-	p.Pit = row.Pit.Format(time.RFC3339)
+	p.Pit = row.Pit
 }
 
-func (r *Repo) InsertPicture(ctx context.Context, file multipart.File, header *multipart.FileHeader, description string) (*Picture, error) {
+func (r *Repo) InsertPicture(
+	ctx context.Context,
+	file multipart.File,
+	header *multipart.FileHeader,
+	author string,
+	description string,
+) (*Picture, error) {
 	if r.storageFull() {
 		return nil, fmt.Errorf("storage full")
 	}
@@ -70,6 +78,7 @@ func (r *Repo) InsertPicture(ctx context.Context, file multipart.File, header *m
 	}
 
 	params := db.InsertPictureParams{
+		Author:      author,
 		Url:         newPath,
 		Description: description,
 		Extension:   ext,

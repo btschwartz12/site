@@ -1,8 +1,8 @@
 -- name: InsertPicture :one
 INSERT INTO
-    pictures (url, extension, description)
+    pictures (url, author, extension, description)
 VALUES
-    (?, ?, ?)
+    (?, ?, ?, ?)
 RETURNING
     *;
 

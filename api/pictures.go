@@ -36,7 +36,13 @@ func (s *server) uploadPictureHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := s.rpo.InsertPicture(r.Context(), file, header, description)
+	author := r.FormValue("author")
+	if author == "" {
+		http.Error(w, "author is required", http.StatusBadRequest)
+		return
+	}
+
+	p, err := s.rpo.InsertPicture(r.Context(), file, header, author, description)
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid extension") {
 			http.Error(w, "Invalid Extension", http.StatusBadRequest)
@@ -47,13 +53,13 @@ func (s *server) uploadPictureHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.logger.Errorw("error inserting picture", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
 		s.logger.Errorw("error encoding picture", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
@@ -75,9 +81,36 @@ func (s *server) deletePictureHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.logger.Errorw("error deleting picture", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// getPicturesHandler godoc
+// @Summary Get pictures
+// @Description Get pictures
+// @Tags pictures
+// @Produce json
+// @Router /api/pics [get]
+// @Security Bearer
+// @Success 200 {array} repo.Picture
+func (s *server) getPicturesHandler(w http.ResponseWriter, r *http.Request) {
+	pictures, err := s.rpo.GetAllPictures(r.Context())
+	if err != nil {
+		s.logger.Errorw("error getting pictures", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.MarshalIndent(pictures, "", " \t")
+	if err != nil {
+		s.logger.Errorw("error marshalling pictures", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }

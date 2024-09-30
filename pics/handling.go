@@ -7,8 +7,10 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/btschwartz12/site/internal/repo"
 	"github.com/btschwartz12/site/internal/slack"
@@ -17,7 +19,11 @@ import (
 )
 
 var (
-	tmpl = template.Must(template.ParseFS(
+	tmpl = template.Must(template.New("").Funcs(template.FuncMap{
+		"formatRFC3339": func(t time.Time) string {
+			return t.Format(time.RFC3339)
+		},
+	}).ParseFS(
 		assets.Templates,
 		"templates/base.html.tmpl",
 	))
@@ -25,15 +31,33 @@ var (
 
 type templateData struct {
 	Pictures []repo.Picture
+	Order    string
 }
 
 func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
-
 	pictures, err := s.rpo.GetAllPictures(r.Context())
 	if err != nil {
 		s.logger.Errorw("error getting pictures", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+
+	order := "dsc"
+	if r.Method == http.MethodPost {
+		v := r.FormValue("order")
+		if v == "asc" {
+			order = v
+		}
+	}
+
+	if order == "dsc" {
+		sort.Slice(pictures, func(i, j int) bool {
+			return pictures[i].Pit.After(pictures[j].Pit)
+		})
+	} else if order == "asc" {
+		sort.Slice(pictures, func(i, j int) bool {
+			return pictures[i].Pit.Before(pictures[j].Pit)
+		})
 	}
 
 	for i, p := range pictures {
@@ -42,6 +66,7 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	templateData := templateData{
 		Pictures: pictures,
+		Order:    order,
 	}
 
 	if err := tmpl.ExecuteTemplate(w, "base.html.tmpl", templateData); err != nil {
@@ -91,7 +116,13 @@ func (s *server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.rpo.InsertPicture(r.Context(), file, header, description)
+	author := r.FormValue("author")
+	if author == "" {
+		http.Error(w, "author is required", http.StatusBadRequest)
+		return
+	}
+
+	_, err = s.rpo.InsertPicture(r.Context(), file, header, author, description)
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid extension") {
 			http.Error(w, "Invalid Extension", http.StatusBadRequest)

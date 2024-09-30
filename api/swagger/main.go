@@ -1,12 +1,12 @@
 package swagger
 
-// @title Your API Title
+// @title An API
 // @version 1.0
-// @description Your API Description
+// @description Nothing to see here
 // @BasePath /
 // @securityDefinitions.apikey Bearer
 // @in header
 // @name Authorization
 // @description Please provide a valid api token
 
-// swag init --output cmd/mungle/handlers/admin/swagger -g cmd/mungle/handlers/admin/swagger/main.go
+// swag init --output api/swagger -g api/swagger/main.go

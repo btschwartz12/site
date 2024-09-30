@@ -17,12 +17,17 @@ func (s *server) getVisitorsHandler(w http.ResponseWriter, r *http.Request) {
 	visitors, err := s.rpo.GetAllVisitors(r.Context())
 	if err != nil {
 		s.logger.Errorw("error getting visitors", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(visitors); err != nil {
-		s.logger.Errorw("error encoding visitors", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	resp, err := json.MarshalIndent(visitors, "", " \t")
+	if err != nil {
+		s.logger.Errorw("error marshalling visitors", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }

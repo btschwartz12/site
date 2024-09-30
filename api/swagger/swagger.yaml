@@ -2,6 +2,8 @@ basePath: /
 definitions:
   repo.Picture:
     properties:
+      author:
+        type: string
       description:
         type: string
       extension:
@@ -38,6 +40,23 @@ info:
   title: Your API Title
   version: "1.0"
 paths:
+  /api/pics:
+    get:
+      description: Get pictures
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.Picture'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get pictures
+      tags:
+      - pictures
   /api/pics/delete/{id}:
     delete:
       description: Delete a picture

@@ -11,6 +11,7 @@ import (
 
 type Picture struct {
 	ID          int64
+	Author      string
 	Url         string
 	Description string
 	Extension   string

@@ -35,6 +35,7 @@ func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo, config *Config) (*serv
 	r.Group(func(r chi.Router) {
 		r.Use(s.tokenMiddleware)
 		r.Get("/visitors", s.getVisitorsHandler)
+		r.Get("/pics", s.getPicturesHandler)
 		r.Post("/pics/upload", s.uploadPictureHandler)
 		r.Delete("/pics/delete/{id}", s.deletePictureHandler)
 	})

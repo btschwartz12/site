@@ -40,21 +40,29 @@ form {
 <body>
 <p>add a picture! please don't be mean :)</p>
 <form action="/pics/upload" method="POST" enctype="multipart/form-data">
-<p><input type="file" name="file" accept="image/*" required>
-<input type="text" name="description" required></p>
+<p style="font-size: 13px;">author:  <input type="text" name="author" required>
+caption: <input style="font-size: 13px;" type="text" name="description" required>
+picture: <input type="file" name="file" accept="image/*" required></p>
 <input type="submit" value="upload">
 </form>
 
+<form action="/pics" method="POST">
+    <input type="hidden" name="order" value="{{ if eq .Order "asc" }}dsc{{ else }}asc{{ end }}">
+    <input type="submit" value="sort {{ if eq .Order "asc" }}old to new{{ else }}new to old{{ end }}">
+</form>
+
 <div class="pictures-grid">
-    {{ range .Pictures }}
-    <div class="picture-container">
-        <img src="{{ .Url }}" alt="{{ .Description }}">
-        <div class="description-container">
-            <p>{{ .Description }}</p>
-            <p style="font-size: 10px; color: lightgrey;">added: {{ .Pit }}</p>
-        </div>
-    </div>
-    {{ end }}
+{{ range .Pictures }}
+<div class="picture-container">
+<img src="{{ .Url }}" alt="{{ .Description }}">
+<div class="description-container">
+<p>{{ .Description }}</p>
+<p style="font-size: 10px; color: lightgrey;">author: {{ .Author }}
+
+{{ .Pit | formatRFC3339 }}</p>
+</div>
+</div>
+{{ end }}
 </div>
 </body>
 </html>

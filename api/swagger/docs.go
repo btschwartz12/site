@@ -15,6 +15,34 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/pics": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get pictures",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pictures"
+                ],
+                "summary": "Get pictures",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.Picture"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/pics/delete/{id}": {
             "delete": {
                 "security": [
@@ -120,6 +148,9 @@ const docTemplate = `{
         "repo.Picture": {
             "type": "object",
             "properties": {
+                "author": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
