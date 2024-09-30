@@ -27,3 +27,30 @@ WHERE
     id = ?
 RETURNING
     url;
+
+-- name: AddLikeToPicture :exec
+UPDATE
+    pictures
+SET
+    num_likes = num_likes + 1
+WHERE
+    id = ?;
+
+-- name: AddDislikeToPicture :exec
+UPDATE
+    pictures
+SET
+    num_dislikes = num_dislikes + 1
+WHERE
+    id = ?;
+
+-- name: UpdateLikesDislikesOfPicture :one
+UPDATE
+    pictures
+SET
+    num_likes = ?,
+    num_dislikes = ?
+WHERE
+    id = ?
+RETURNING
+    *;

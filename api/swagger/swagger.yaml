@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  api.updateLikesRequest:
+    properties:
+      num_dislikes:
+        type: integer
+      num_likes:
+        type: integer
+    type: object
   repo.Picture:
     properties:
       author:
@@ -9,6 +16,10 @@ definitions:
       extension:
         type: string
       id:
+        type: integer
+      numDislikes:
+        type: integer
+      numLikes:
         type: integer
       pit:
         type: string
@@ -36,8 +47,8 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Your API Description
-  title: Your API Title
+  description: Nothing to see here
+  title: An API
   version: "1.0"
 paths:
   /api/pics:
@@ -72,6 +83,35 @@ paths:
       security:
       - Bearer: []
       summary: Delete a picture
+      tags:
+      - pictures
+  /api/pics/update_likes/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update the likes and dislikes of a picture
+      parameters:
+      - description: Picture ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Likes and Dislikes
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.updateLikesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.Picture'
+      security:
+      - Bearer: []
+      summary: Update likes
       tags:
       - pictures
   /api/pics/upload:

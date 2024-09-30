@@ -75,6 +75,40 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) likeHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := s.rpo.LikePicture(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		s.logger.Errorw("error liking picture", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/pics", http.StatusSeeOther)
+}
+
+func (s *server) dislikeHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := s.rpo.DislikePicture(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		s.logger.Errorw("error disliking picture", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/pics", http.StatusSeeOther)
+}
+
 func (s *server) servePictureHandler(w http.ResponseWriter, r *http.Request) {
 	basename := chi.URLParam(r, "basename")
 

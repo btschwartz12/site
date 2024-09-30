@@ -38,6 +38,7 @@ func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo, config *Config) (*serv
 		r.Get("/pics", s.getPicturesHandler)
 		r.Post("/pics/upload", s.uploadPictureHandler)
 		r.Delete("/pics/delete/{id}", s.deletePictureHandler)
+		r.Put("/pics/update_likes/{id}", s.updateLikesHandler)
 	})
 
 	return s, r, nil

@@ -22,7 +22,7 @@ form {
 
 .picture-container {
     background-color: #1a1a1a;
-    padding: 10px;
+    padding: 10px 10px 5px 10px; /* Adjusted bottom padding */
     border: 2px solid #333;
     display: flex;
     flex-direction: column;
@@ -36,11 +36,41 @@ form {
 .description-container {
     margin-top: auto;
 }
+
+.description-container p,
+.description-container form,
+.like-section {
+    margin: 0;
+    padding: 0;
+}
+
+.like-section {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.like-button {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.like-button:hover {
+    background-color: #555;
+}
+
+.picture-container > *:last-child {
+    margin-bottom: 0;
+}
 </style>
 <body>
 <p>add a picture! please don't be mean :)</p>
 <form action="/pics/upload" method="POST" enctype="multipart/form-data">
-<p style="font-size: 13px;">author:  <input type="text" name="author" required>
+<p style="font-size: 13px; margin-top: 10px">author:  <input type="text" name="author" required>
 caption: <input style="font-size: 13px;" type="text" name="description" required>
 picture: <input type="file" name="file" accept="image/*" required></p>
 <input type="submit" value="upload">
@@ -54,12 +84,21 @@ picture: <input type="file" name="file" accept="image/*" required></p>
 <div class="pictures-grid">
 {{ range .Pictures }}
 <div class="picture-container">
+<p>{{ .Description }}</p>
 <img src="{{ .Url }}" alt="{{ .Description }}">
 <div class="description-container">
-<p>{{ .Description }}</p>
-<p style="font-size: 10px; color: lightgrey;">author: {{ .Author }}
+<p style="font-size: 10px; color: lightgrey;">author: {{ .Author }}<br></p>
 
-{{ .Pit | formatRFC3339 }}</p>
+<div class="like-section">
+<form action="/pics/like/{{ .ID }}" method="POST">
+<input type="submit" value="{{ .NumLikes }} likes" class="like-button" style="color: lightblue;">
+</form>
+</br>
+<form action="/pics/dislike/{{ .ID }}" method="POST">
+<input type="submit" value="{{ .NumDislikes }} dislikes" class="like-button" style="color: #ff6666;">
+</form>
+</div>
+<p style="font-size: 10px; color: lightgrey;">{{ .Pit | formatRFC3339 }}</p>
 </div>
 </div>
 {{ end }}

@@ -71,6 +71,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/pics/update_likes/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Update the likes and dislikes of a picture",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pictures"
+                ],
+                "summary": "Update likes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Picture ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Likes and Dislikes",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.updateLikesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.Picture"
+                        }
+                    }
+                }
+            }
+        },
         "/api/pics/upload": {
             "post": {
                 "security": [
@@ -145,6 +191,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.updateLikesRequest": {
+            "type": "object",
+            "properties": {
+                "num_dislikes": {
+                    "type": "integer"
+                },
+                "num_likes": {
+                    "type": "integer"
+                }
+            }
+        },
         "repo.Picture": {
             "type": "object",
             "properties": {
@@ -158,6 +215,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "numDislikes": {
+                    "type": "integer"
+                },
+                "numLikes": {
                     "type": "integer"
                 },
                 "pit": {
@@ -214,8 +277,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Your API Title",
-	Description:      "Your API Description",
+	Title:            "An API",
+	Description:      "Nothing to see here",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

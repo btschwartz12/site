@@ -31,6 +31,8 @@ type Picture struct {
 	Url         string
 	Description string
 	Extension   string
+	NumLikes    int64
+	NumDislikes int64
 	Pit         time.Time
 }
 
@@ -40,6 +42,8 @@ func (p *Picture) fromDb(row *db.Picture) {
 	p.Url = row.Url
 	p.Description = row.Description
 	p.Extension = row.Extension
+	p.NumLikes = row.NumLikes
+	p.NumDislikes = row.NumDislikes
 	p.Pit = row.Pit
 }
 
@@ -148,6 +152,51 @@ func (r *Repo) DeletePicture(ctx context.Context, idStr string) error {
 	}
 
 	return nil
+}
+
+func (r *Repo) LikePicture(ctx context.Context, idStr string) error {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("error converting id to int64: %w", err)
+	}
+	q := db.New(r.db)
+	err = q.AddLikeToPicture(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error liking picture: %w", err)
+	}
+	return nil
+}
+
+func (r *Repo) DislikePicture(ctx context.Context, idStr string) error {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("error converting id to int64: %w", err)
+	}
+	q := db.New(r.db)
+	err = q.AddDislikeToPicture(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error disliking picture: %w", err)
+	}
+	return nil
+}
+
+func (r *Repo) UpdateLikesOfPicture(ctx context.Context, idStr string, likes int64, dislikes int64) (*Picture, error) {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error converting id to int64: %w", err)
+	}
+	q := db.New(r.db)
+	picture, err := q.UpdateLikesDislikesOfPicture(ctx, db.UpdateLikesDislikesOfPictureParams{
+		ID:          id,
+		NumLikes:    likes,
+		NumDislikes: dislikes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error updating likes/dislikes: %w", err)
+	}
+	p := Picture{}
+	p.fromDb(&picture)
+	return &p, nil
 }
 
 func parsePictureBasename(basename string) (int64, string, error) {

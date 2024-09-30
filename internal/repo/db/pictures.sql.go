@@ -9,6 +9,34 @@ import (
 	"context"
 )
 
+const addDislikeToPicture = `-- name: AddDislikeToPicture :exec
+UPDATE
+    pictures
+SET
+    num_dislikes = num_dislikes + 1
+WHERE
+    id = ?
+`
+
+func (q *Queries) AddDislikeToPicture(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, addDislikeToPicture, id)
+	return err
+}
+
+const addLikeToPicture = `-- name: AddLikeToPicture :exec
+UPDATE
+    pictures
+SET
+    num_likes = num_likes + 1
+WHERE
+    id = ?
+`
+
+func (q *Queries) AddLikeToPicture(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, addLikeToPicture, id)
+	return err
+}
+
 const deletePicture = `-- name: DeletePicture :one
 DELETE FROM
     pictures
@@ -27,7 +55,7 @@ func (q *Queries) DeletePicture(ctx context.Context, id int64) (string, error) {
 
 const getAllPictures = `-- name: GetAllPictures :many
 SELECT
-    id, author, url, description, extension, pit
+    id, author, url, description, extension, num_likes, num_dislikes, pit
 FROM
     pictures
 `
@@ -47,6 +75,8 @@ func (q *Queries) GetAllPictures(ctx context.Context) ([]Picture, error) {
 			&i.Url,
 			&i.Description,
 			&i.Extension,
+			&i.NumLikes,
+			&i.NumDislikes,
 			&i.Pit,
 		); err != nil {
 			return nil, err
@@ -64,7 +94,7 @@ func (q *Queries) GetAllPictures(ctx context.Context) ([]Picture, error) {
 
 const getPicture = `-- name: GetPicture :one
 SELECT
-    id, author, url, description, extension, pit
+    id, author, url, description, extension, num_likes, num_dislikes, pit
 FROM
     pictures
 WHERE
@@ -80,6 +110,8 @@ func (q *Queries) GetPicture(ctx context.Context, id int64) (Picture, error) {
 		&i.Url,
 		&i.Description,
 		&i.Extension,
+		&i.NumLikes,
+		&i.NumDislikes,
 		&i.Pit,
 	)
 	return i, err
@@ -91,7 +123,7 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?)
 RETURNING
-    id, author, url, description, extension, pit
+    id, author, url, description, extension, num_likes, num_dislikes, pit
 `
 
 type InsertPictureParams struct {
@@ -115,6 +147,42 @@ func (q *Queries) InsertPicture(ctx context.Context, arg InsertPictureParams) (P
 		&i.Url,
 		&i.Description,
 		&i.Extension,
+		&i.NumLikes,
+		&i.NumDislikes,
+		&i.Pit,
+	)
+	return i, err
+}
+
+const updateLikesDislikesOfPicture = `-- name: UpdateLikesDislikesOfPicture :one
+UPDATE
+    pictures
+SET
+    num_likes = ?,
+    num_dislikes = ?
+WHERE
+    id = ?
+RETURNING
+    id, author, url, description, extension, num_likes, num_dislikes, pit
+`
+
+type UpdateLikesDislikesOfPictureParams struct {
+	NumLikes    int64
+	NumDislikes int64
+	ID          int64
+}
+
+func (q *Queries) UpdateLikesDislikesOfPicture(ctx context.Context, arg UpdateLikesDislikesOfPictureParams) (Picture, error) {
+	row := q.db.QueryRowContext(ctx, updateLikesDislikesOfPicture, arg.NumLikes, arg.NumDislikes, arg.ID)
+	var i Picture
+	err := row.Scan(
+		&i.ID,
+		&i.Author,
+		&i.Url,
+		&i.Description,
+		&i.Extension,
+		&i.NumLikes,
+		&i.NumDislikes,
 		&i.Pit,
 	)
 	return i, err

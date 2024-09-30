@@ -15,6 +15,8 @@ type Picture struct {
 	Url         string
 	Description string
 	Extension   string
+	NumLikes    int64
+	NumDislikes int64
 	Pit         time.Time
 }
 

@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Your API Description",
-        "title": "Your API Title",
+        "description": "Nothing to see here",
+        "title": "An API",
         "contact": {},
         "version": "1.0"
     },
@@ -60,6 +60,52 @@
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/api/pics/update_likes/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Update the likes and dislikes of a picture",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pictures"
+                ],
+                "summary": "Update likes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Picture ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Likes and Dislikes",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.updateLikesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.Picture"
+                        }
                     }
                 }
             }
@@ -138,6 +184,17 @@
         }
     },
     "definitions": {
+        "api.updateLikesRequest": {
+            "type": "object",
+            "properties": {
+                "num_dislikes": {
+                    "type": "integer"
+                },
+                "num_likes": {
+                    "type": "integer"
+                }
+            }
+        },
         "repo.Picture": {
             "type": "object",
             "properties": {
@@ -151,6 +208,12 @@
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "numDislikes": {
+                    "type": "integer"
+                },
+                "numLikes": {
                     "type": "integer"
                 },
                 "pit": {

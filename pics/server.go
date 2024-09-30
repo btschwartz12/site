@@ -20,6 +20,8 @@ func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo) (*server, chi.Router, 
 	r := chi.NewRouter()
 	r.HandleFunc("/", s.indexHandler)
 	r.Post("/upload", s.uploadHandler)
+	r.Post("/like/{id}", s.likeHandler)
+	r.Post("/dislike/{id}", s.dislikeHandler)
 	r.HandleFunc("/static/pic/{basename}", s.servePictureHandler)
 	return s, r, nil
 }

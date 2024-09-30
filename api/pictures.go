@@ -114,3 +114,46 @@ func (s *server) getPicturesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }
+
+type updateLikesRequest struct {
+	NumLikes    int `json:"num_likes"`
+	NumDislikes int `json:"num_dislikes"`
+}
+
+// updateLikesHandler godoc
+// @Summary Update likes
+// @Description Update the likes and dislikes of a picture
+// @Tags pictures
+// @Param id path string true "Picture ID"
+// @Param body body updateLikesRequest true "Likes and Dislikes"
+// @Accept json
+// @Produce json
+// @Router /api/pics/update_likes/{id} [put]
+// @Security Bearer
+// @Success 200 {object} repo.Picture
+func (s *server) updateLikesHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req updateLikesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.logger.Errorw("error decoding request", "error", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	p, err := s.rpo.UpdateLikesOfPicture(r.Context(), id, int64(req.NumLikes), int64(req.NumDislikes))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		s.logger.Errorw("error updating likes", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(p); err != nil {
+		s.logger.Errorw("error encoding picture", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
