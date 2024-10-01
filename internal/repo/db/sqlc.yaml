@@ -5,6 +5,7 @@ sql:
     queries:
       - "sql/visitors.sql"
       - "sql/pictures.sql"
+      - "sql/survey.sql"
     gen:
       go:
         package: "db"

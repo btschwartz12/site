@@ -20,6 +20,12 @@ type Picture struct {
 	Pit         time.Time
 }
 
+type SurveyState struct {
+	ID   int64
+	Data []byte
+	Pit  time.Time
+}
+
 type Visitor struct {
 	ID      int64
 	Path    string

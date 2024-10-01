@@ -44,7 +44,6 @@ func (s *survey) unmarshal(data []byte) error {
 	if len(data) <= 2 {
 		return fmt.Errorf("no questions")
 	}
-
 	s.version = data[0]
 	numQuestions := int(data[1])
 	s.questions = make(map[uint8]question)

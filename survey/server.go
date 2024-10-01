@@ -1,6 +1,7 @@
 package survey
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -73,4 +74,16 @@ func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo, config *Config) (*serv
 	go s.handleWsMessages()
 
 	return s, r, nil
+}
+
+func (s *server) RestoreState() error {
+	existingState, err := s.rpo.GetSurveyState(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get survey state: %w", err)
+	}
+	err = s.updateState(existingState)
+	if err != nil {
+		return fmt.Errorf("failed to update state: %w", err)
+	}
+	return nil
 }

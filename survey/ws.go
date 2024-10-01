@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -146,16 +147,21 @@ func (s *server) updateHandler(w http.ResponseWriter, r *http.Request) {
 	s.stateMutex.Lock()
 	defer s.stateMutex.Unlock()
 
-	var svy survey
-	err = svy.unmarshal(data)
+	// update the state
+	err = s.updateState(data)
 	if err != nil {
-		s.logger.Errorw("error unmarshaling survey", "error", err)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		s.logger.Errorw("error updating state", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// update the state
-	s.updateState(&svy)
+	// save current state to database (for persistence b/w restarts)
+	go func() {
+		if err := s.rpo.UpdateSurveyState(context.Background(), data); err != nil {
+			s.logger.Errorw("error updating survey state in repo", "error", err)
+		}
+	}()
+
 	// broadcast the change
 	s.surveyMessageQueue <- stateUpdate{MarshaledSurvey: data}
 
@@ -165,7 +171,13 @@ func (s *server) updateHandler(w http.ResponseWriter, r *http.Request) {
 
 // updateState will update the server's state with the provided survey,
 // This will be called with a lock held on the stateMutex.
-func (s *server) updateState(newSurvey *survey) {
+func (s *server) updateState(data []byte) error {
+	newSurvey := &survey{}
+	err := newSurvey.unmarshal(data)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling survey: %w", err)
+	}
+
 	for id, question := range newSurvey.questions {
 		if q, ok := s.state.questions[id]; ok {
 			switch q := q.(type) {
@@ -182,4 +194,5 @@ func (s *server) updateState(newSurvey *survey) {
 			}
 		}
 	}
+	return nil
 }

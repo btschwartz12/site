@@ -4,7 +4,10 @@ server:
 swagger:
 	swag init --output api/swagger -g api/swagger/main.go
 
-run-server: swagger server 
+sqlc:
+	cd internal/repo/db && sqlc generate
+
+run-server: swagger sqlc server 
 	godotenv -f .env ./server --port 8080 --dev
 
 clean:

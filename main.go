@@ -73,9 +73,13 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to create survey config: %w", err))
 	}
-	_, surveyRouter, err := survey.NewServer(logger, rpo, surveyConfig)
+	surveyServer, surveyRouter, err := survey.NewServer(logger, rpo, surveyConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create survey server: %w", err))
+	}
+	err = surveyServer.RestoreState()
+	if err != nil {
+		logger.Errorw("failed to restore survey state", "error", err)
 	}
 
 	// poke
