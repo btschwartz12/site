@@ -2,7 +2,6 @@ package slack
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
@@ -22,23 +21,15 @@ func SendAlert(logger *zap.SugaredLogger, title string, blocks []Block) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		done := make(chan struct{})
 		errChan := make(chan error, 1)
 
-		go func() {
-			defer close(done)
-			err := sendToSlack(slackWebhookUrl, title, blocks)
-			if err != nil {
-				errChan <- fmt.Errorf("failed to send message to Slack: %w", err)
-				return
-			}
-			errChan <- nil
-		}()
+		err := sendToSlack(slackWebhookUrl, title, blocks)
+		errChan <- err
 
 		select {
 		case err := <-errChan:
 			if err != nil {
-				logger.Errorw("error occurred while sending slack message", "error", err, "blocks", blocks)
+				logger.Errorw("failed to send message to Slack", "error", err, "blocks", blocks)
 			} else {
 				logger.Infow("sent message to slack")
 			}
