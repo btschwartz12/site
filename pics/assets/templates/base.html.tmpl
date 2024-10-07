@@ -78,7 +78,7 @@ picture: <input type="file" name="file" accept="image/*" required></p>
 
 <form action="/pics" method="POST">
     <input type="hidden" name="order" value="{{ if eq .Order "asc" }}dsc{{ else }}asc{{ end }}">
-    <input type="submit" value="sort {{ if eq .Order "asc" }}old to new{{ else }}new to old{{ end }}">
+    <input type="submit" value="{{ if eq .Order "asc" }}old to new{{ else }}new to old{{ end }}">
 </form>
 
 <div class="pictures-grid">
