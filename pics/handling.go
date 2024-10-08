@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
+	"math/rand"
 	"net/http"
 	"os"
 	"sort"
@@ -43,20 +45,38 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order := "dsc"
-	if r.Method == http.MethodPost {
-		v := r.FormValue("order")
-		if v == "asc" {
-			order = v
-		}
+	v := r.FormValue("order")
+	allowedOrders := map[string]bool{
+		"asc":      true,
+		"dsc":      true,
+		"random":   true,
+		"likes":    true,
+		"dislikes": true,
+	}
+	if allowedOrders[v] {
+		order = v
 	}
 
-	if order == "dsc" {
+	switch order {
+	case "dsc":
 		sort.Slice(pictures, func(i, j int) bool {
 			return pictures[i].Pit.After(pictures[j].Pit)
 		})
-	} else if order == "asc" {
+	case "asc":
 		sort.Slice(pictures, func(i, j int) bool {
 			return pictures[i].Pit.Before(pictures[j].Pit)
+		})
+	case "likes":
+		sort.Slice(pictures, func(i, j int) bool {
+			return pictures[i].NumLikes > pictures[j].NumLikes
+		})
+	case "dislikes":
+		sort.Slice(pictures, func(i, j int) bool {
+			return pictures[i].NumDislikes > pictures[j].NumDislikes
+		})
+	case "random":
+		rand.Shuffle(len(pictures), func(i, j int) {
+			pictures[i], pictures[j] = pictures[j], pictures[i]
 		})
 	}
 
@@ -77,6 +97,10 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) likeHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	order := r.FormValue("order")
+	if order == "" {
+		order = "dsc"
+	}
 
 	err := s.rpo.LikePicture(r.Context(), id)
 	if err != nil {
@@ -89,11 +113,15 @@ func (s *server) likeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/pics", http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/pics?order=%s", order), http.StatusSeeOther)
 }
 
 func (s *server) dislikeHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	order := r.FormValue("order")
+	if order == "" {
+		order = "dsc"
+	}
 
 	err := s.rpo.DislikePicture(r.Context(), id)
 	if err != nil {
@@ -106,7 +134,7 @@ func (s *server) dislikeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/pics", http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/pics?order=%s", order), http.StatusSeeOther)
 }
 
 func (s *server) servePictureHandler(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +199,30 @@ func (s *server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go s.rpo.RecordVisitor(context.Background(), r, "uploaded picture", []slack.Block{})
+	go s.rpo.RecordVisitor(context.Background(), r, "uploaded picture", getPictureBlocks(author, description))
 
 	http.Redirect(w, r, "/pics", http.StatusSeeOther)
+}
+
+func getPictureBlocks(author, description string) []slack.Block {
+	blocks := []slack.Block{
+		{
+			Type: "context",
+			Elements: []slack.Element{
+				{
+					Type: "mrkdwn",
+					Text: "pic uploaded!",
+				},
+				{
+					Type: "mrkdwn",
+					Text: fmt.Sprintf("author: %s", author),
+				},
+				{
+					Type: "mrkdwn",
+					Text: fmt.Sprintf("caption: %s", description),
+				},
+			},
+		},
+	}
+	return blocks
 }

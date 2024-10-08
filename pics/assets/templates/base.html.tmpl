@@ -76,9 +76,14 @@ picture: <input type="file" name="file" accept="image/*" required></p>
 <input type="submit" value="upload">
 </form>
 
-<form action="/pics" method="POST">
-    <input type="hidden" name="order" value="{{ if eq .Order "asc" }}dsc{{ else }}asc{{ end }}">
-    <input type="submit" value="{{ if eq .Order "asc" }}old to new{{ else }}new to old{{ end }}">
+<form action="/pics" method="GET">
+    <select name="order" onchange="this.form.submit()">
+        <option value="dsc" {{if eq .Order "dsc"}}selected{{end}}>new to old</option>
+        <option value="asc" {{if eq .Order "asc"}}selected{{end}}>old to new</option>
+        <option value="likes" {{if eq .Order "likes"}}selected{{end}}>most likes</option>
+        <option value="dislikes" {{if eq .Order "dislikes"}}selected{{end}}>most dislikes</option>
+        <option value="random" {{if eq .Order "random"}}selected{{end}}>random</option>
+    </select>
 </form>
 
 <div class="pictures-grid">
@@ -92,10 +97,12 @@ picture: <input type="file" name="file" accept="image/*" required></p>
 <div class="like-section">
 <form action="/pics/like/{{ .ID }}" method="POST">
 <input type="submit" value="{{ .NumLikes }} likes" class="like-button" style="color: lightblue;">
+<input type="hidden" name="order" value="{{ $.Order }}">
 </form>
 </br>
 <form action="/pics/dislike/{{ .ID }}" method="POST">
 <input type="submit" value="{{ .NumDislikes }} dislikes" class="like-button" style="color: #ff6666;">
+<input type="hidden" name="order" value="{{ $.Order }}">
 </form>
 </div>
 <p style="font-size: 10px; color: lightgrey;">{{ .Pit | formatRFC3339 }}</p>
