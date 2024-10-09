@@ -3,3 +3,5 @@ notes
 app
 server
 var
+rust/target
+env

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	flags "github.com/jessevdk/go-flags"
@@ -12,6 +13,7 @@ import (
 	"github.com/btschwartz12/site/internal/repo"
 	"github.com/btschwartz12/site/pics"
 	"github.com/btschwartz12/site/poke"
+	"github.com/btschwartz12/site/internal/proxy"
 	"github.com/btschwartz12/site/survey"
 
 	"go.uber.org/zap"
@@ -101,6 +103,12 @@ func main() {
 	r.Mount("/survey", surveyRouter)
 	r.Mount("/poke", pokeRouter)
 	r.Mount("/pics", picsRouter)
+	r.HandleFunc("/rust*", proxy.Proxy(os.Getenv("RUST_TARGET"), "/rust"))
+	r.HandleFunc("/python*", proxy.Proxy(os.Getenv("PYTHON_TARGET"), "/python"))
+	r.HandleFunc("/node*", proxy.Proxy(os.Getenv("NODE_TARGET"), "/node"))
+	r.HandleFunc("/csharp*", proxy.Proxy(os.Getenv("CSHARP_TARGET"), "/csharp"))
+	r.HandleFunc("/php*", proxy.Proxy(os.Getenv("PHP_TARGET"), "/php"))
+	r.HandleFunc("/c*", proxy.Proxy(os.Getenv("C_TARGET"), "/c"))
 
 	errChan := make(chan error)
 	go func() {
