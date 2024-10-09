@@ -4,10 +4,25 @@ services:
     env_file: .env
     environment:
       - TLS=true
+      - RUST_TARGET=http://rust-site:8000
+      - C_TARGET=http://c-site:8000
     volumes:
       - ./var:/app/var
     command: ./app --port 8080
-    
+
+  rust-site:
+    build:
+      context: ./rust
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8000
+  
+  c-site:
+    build:
+      context: ./c
+      dockerfile: Dockerfile
+    # listens on 8000
+
   cloudflared:
     restart: unless-stopped
     image: cloudflare/cloudflared:latest

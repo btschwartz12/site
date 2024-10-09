@@ -12,3 +12,17 @@ run-server: swagger sqlc server
 
 clean:
 	rm -f server
+
+# rust stuff
+rust-server:
+	cd rust && cargo build --release
+
+run-rust-server: rust-server
+	cd rust && godotenv -f ../.env ./target/release/rust-app
+
+# c stuff
+c-server:
+	cd c && clang -o server app.c
+
+run-c-server: c-server
+	cd c && godotenv -f ../.env ./server

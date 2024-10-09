@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	flags "github.com/jessevdk/go-flags"
 
 	"github.com/btschwartz12/site/api"
 	"github.com/btschwartz12/site/base"
+	"github.com/btschwartz12/site/internal/proxy"
 	"github.com/btschwartz12/site/internal/repo"
 	"github.com/btschwartz12/site/pics"
 	"github.com/btschwartz12/site/poke"
@@ -101,6 +103,8 @@ func main() {
 	r.Mount("/survey", surveyRouter)
 	r.Mount("/poke", pokeRouter)
 	r.Mount("/pics", picsRouter)
+	r.HandleFunc("/rust*", proxy.Proxy(os.Getenv("RUST_TARGET"), "/rust"))
+	r.HandleFunc("/c*", proxy.Proxy(os.Getenv("C_TARGET"), "/c"))
 
 	errChan := make(chan error)
 	go func() {
