@@ -23,7 +23,7 @@ type templateData struct {
 	Title string
 }
 
-func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *BaseServer) indexHandler(w http.ResponseWriter, r *http.Request) {
 	templateData := templateData{
 		Title: "Home",
 	}

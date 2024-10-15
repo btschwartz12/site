@@ -21,7 +21,7 @@ import (
 // @Router /api/pics/upload [post]
 // @Security Bearer
 // @Success 200 {object} repo.Picture
-func (s *server) uploadPictureHandler(w http.ResponseWriter, r *http.Request) {
+func (s *handler) uploadPictureHandler(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		s.logger.Errorw("error getting file from form", "error", err)
@@ -71,7 +71,7 @@ func (s *server) uploadPictureHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /api/pics/delete/{id} [delete]
 // @Security Bearer
 // @Success 204
-func (s *server) deletePictureHandler(w http.ResponseWriter, r *http.Request) {
+func (s *handler) deletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	err := s.rpo.DeletePicture(r.Context(), id)
@@ -96,7 +96,7 @@ func (s *server) deletePictureHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /api/pics [get]
 // @Security Bearer
 // @Success 200 {array} repo.Picture
-func (s *server) getPicturesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *handler) getPicturesHandler(w http.ResponseWriter, r *http.Request) {
 	pictures, err := s.rpo.GetAllPictures(r.Context())
 	if err != nil {
 		s.logger.Errorw("error getting pictures", "error", err)
@@ -131,7 +131,7 @@ type updateLikesRequest struct {
 // @Router /api/pics/update_likes/{id} [put]
 // @Security Bearer
 // @Success 200 {object} repo.Picture
-func (s *server) updateLikesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *handler) updateLikesHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	var req updateLikesRequest

@@ -20,8 +20,9 @@ import (
 )
 
 type arguments struct {
-	Port       int  `short:"p" long:"port" description:"Port to listen on" default:"8080"`
-	DevLogging bool `short:"d" long:"dev" description:"Enable development logging"`
+	Port        int  `short:"p" long:"port" description:"Port to listen on" default:"8080"`
+	DevLogging  bool `short:"d" long:"dev-logging" description:"Enable development logging"`
+	EnableProxy bool `long:"enable-proxy" description:"Enable proxying to other services"`
 }
 
 var opts arguments
@@ -48,64 +49,36 @@ func main() {
 	}
 	logger := l.Sugar()
 
-	// repo
+	// set up repo
 	rpo, err := repo.NewRepo(logger, "var")
 	if err != nil {
 		panic(fmt.Errorf("failed to create repo: %w", err))
 	}
 
-	// base
-	_, baseRouter, err := base.NewServer(logger, rpo)
-	if err != nil {
-		panic(fmt.Errorf("failed to create base server: %w", err))
-	}
-
-	// api
-	apiConfig, err := api.NewConfig()
-	if err != nil {
-		panic(fmt.Errorf("failed to create api config: %w", err))
-	}
-	_, apiRouter, err := api.NewServer(logger, rpo, apiConfig)
-	if err != nil {
-		panic(fmt.Errorf("failed to create api server: %w", err))
-	}
-
-	// survey
-	surveyConfig, err := survey.NewConfig()
-	if err != nil {
-		panic(fmt.Errorf("failed to create survey config: %w", err))
-	}
-	surveyServer, surveyRouter, err := survey.NewServer(logger, rpo, surveyConfig)
-	if err != nil {
-		panic(fmt.Errorf("failed to create survey server: %w", err))
-	}
-	err = surveyServer.RestoreState()
-	if err != nil {
-		logger.Errorw("failed to restore survey state", "error", err)
-	}
-
-	// poke
-	_, pokeRouter, err := poke.NewServer(logger, rpo)
-	if err != nil {
-		panic(fmt.Errorf("failed to create poke server: %w", err))
-	}
-
-	// pics
-	_, picsRouter, err := pics.NewServer(logger, rpo)
-	if err != nil {
-		panic(fmt.Errorf("failed to create pics server: %w", err))
-	}
-
-	// do the thing
+	// set up apps
 	r := chi.NewRouter()
-	r.Mount("/", baseRouter)
-	r.Mount("/api", apiRouter)
-	r.Mount("/survey", surveyRouter)
-	r.Mount("/poke", pokeRouter)
-	r.Mount("/pics", picsRouter)
-	r.HandleFunc("/rust*", proxy.Proxy(os.Getenv("RUST_TARGET"), "/rust"))
-	r.HandleFunc("/c*", proxy.Proxy(os.Getenv("C_TARGET"), "/c"))
+	apps := map[string]app{
+		"/":       &base.BaseServer{},
+		"/poke":   &poke.PokeServer{},
+		"/survey": &survey.SurveyServer{},
+		"/pics":   &pics.PicsServer{},
+		"/api":    &api.ApiServer{},
+	}
+	for mp, a := range apps {
+		err = a.Init(mp, logger, rpo)
+		if err != nil {
+			panic(fmt.Errorf("failed to init app: %w", err))
+		}
+		r.Mount(a.GetMountPoint(), a.GetRouter())
+	}
 
+	// enable proxying
+	if opts.EnableProxy {
+		r.HandleFunc("/rust*", proxy.Proxy(os.Getenv("RUST_TARGET"), "/rust"))
+		r.HandleFunc("/c*", proxy.Proxy(os.Getenv("C_TARGET"), "/c"))
+	}
+
+	// start server
 	errChan := make(chan error)
 	go func() {
 		logger.Infow("starting server", "port", opts.Port)
@@ -113,4 +86,10 @@ func main() {
 	}()
 	err = <-errChan
 	logger.Fatalw("server error", "error", err)
+}
+
+type app interface {
+	Init(mountPoint string, logger *zap.SugaredLogger, repo *repo.Repo) error
+	GetRouter() chi.Router
+	GetMountPoint() string
 }

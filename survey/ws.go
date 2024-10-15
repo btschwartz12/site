@@ -23,7 +23,7 @@ const (
 // handleWsMessages will run in its own goroutine, waiting for messages
 // to be added to the messageQueue, then broadcasting them to all
 // connected clients.
-func (s *server) handleWsMessages() {
+func (s *SurveyServer) handleWsMessages() {
 	// handle survey updates
 	go func() {
 		for {
@@ -75,7 +75,7 @@ func getNumConnectionsMessage(update uint32) []byte {
 // wsHandler is the handler for the websocket connection. It will
 // upgrade the connection, send the current state to the client,
 // then keep the connection open to receive updates.
-func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *SurveyServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
@@ -133,7 +133,7 @@ func (s *server) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 // updateHandler is the handler for updating the survey state,
 // and is called any time a client makes a change to the survey.
-func (s *server) updateHandler(w http.ResponseWriter, r *http.Request) {
+func (s *SurveyServer) updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -171,7 +171,7 @@ func (s *server) updateHandler(w http.ResponseWriter, r *http.Request) {
 
 // updateState will update the server's state with the provided survey,
 // This will be called with a lock held on the stateMutex.
-func (s *server) updateState(data []byte) error {
+func (s *SurveyServer) updateState(data []byte) error {
 	newSurvey := &survey{}
 	err := newSurvey.unmarshal(data)
 	if err != nil {

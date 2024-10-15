@@ -36,7 +36,7 @@ type templateData struct {
 	Order    string
 }
 
-func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PicsServer) indexHandler(w http.ResponseWriter, r *http.Request) {
 	pictures, err := s.rpo.GetAllPictures(r.Context())
 	if err != nil {
 		s.logger.Errorw("error getting pictures", "error", err)
@@ -95,7 +95,7 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) likeHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PicsServer) likeHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	order := r.FormValue("order")
 	if order == "" {
@@ -116,7 +116,7 @@ func (s *server) likeHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/pics?order=%s", order), http.StatusSeeOther)
 }
 
-func (s *server) dislikeHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PicsServer) dislikeHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	order := r.FormValue("order")
 	if order == "" {
@@ -137,7 +137,7 @@ func (s *server) dislikeHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/pics?order=%s", order), http.StatusSeeOther)
 }
 
-func (s *server) servePictureHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PicsServer) servePictureHandler(w http.ResponseWriter, r *http.Request) {
 	basename := chi.URLParam(r, "basename")
 
 	p, err := s.rpo.GetPicture(r.Context(), basename)
@@ -164,7 +164,7 @@ func (s *server) servePictureHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, p.Url)
 }
 
-func (s *server) uploadHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PicsServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "file is required", http.StatusBadRequest)

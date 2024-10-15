@@ -22,7 +22,7 @@ type templateData struct {
 	ShinyOdds string
 }
 
-func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *PokeServer) indexHandler(w http.ResponseWriter, r *http.Request) {
 	templateData := templateData{
 		ShinyOdds: fmt.Sprintf("1 in %d", s.getShinyOddsDenom()),
 	}
@@ -41,7 +41,7 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) getShinyEncounterBlocks(encounter *encounter) []slack.Block {
+func (s *PokeServer) getShinyEncounterBlocks(encounter *encounter) []slack.Block {
 	blocks := []slack.Block{
 		{
 			Type: "context",

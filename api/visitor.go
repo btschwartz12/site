@@ -13,7 +13,7 @@ import (
 // @Router /api/visitors [get]
 // @Security Bearer
 // @Success 200 {array} repo.Visitor
-func (s *server) getVisitorsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *handler) getVisitorsHandler(w http.ResponseWriter, r *http.Request) {
 	visitors, err := s.rpo.GetAllVisitors(r.Context())
 	if err != nil {
 		s.logger.Errorw("error getting visitors", "error", err)

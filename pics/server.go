@@ -7,21 +7,32 @@ import (
 	"github.com/btschwartz12/site/internal/repo"
 )
 
-type server struct {
-	logger *zap.SugaredLogger
-	rpo    *repo.Repo
+type PicsServer struct {
+	logger     *zap.SugaredLogger
+	rpo        *repo.Repo
+	router     *chi.Mux
+	mountPoint string
 }
 
-func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo) (*server, chi.Router, error) {
-	s := &server{
-		logger: logger,
-		rpo:    rpo,
-	}
-	r := chi.NewRouter()
-	r.HandleFunc("/", s.indexHandler)
-	r.Post("/upload", s.uploadHandler)
-	r.Post("/like/{id}", s.likeHandler)
-	r.Post("/dislike/{id}", s.dislikeHandler)
-	r.HandleFunc("/static/pic/{basename}", s.servePictureHandler)
-	return s, r, nil
+func (s *PicsServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo.Repo) error {
+	s.logger = logger
+	s.rpo = rpo
+	s.mountPoint = mountPoint
+	s.router = chi.NewRouter()
+
+	s.router.HandleFunc("/", s.indexHandler)
+	s.router.Post("/upload", s.uploadHandler)
+	s.router.Post("/like/{id}", s.likeHandler)
+	s.router.Post("/dislike/{id}", s.dislikeHandler)
+	s.router.HandleFunc("/static/pic/{basename}", s.servePictureHandler)
+
+	return nil
+}
+
+func (s *PicsServer) GetRouter() chi.Router {
+	return s.router
+}
+
+func (s *PicsServer) GetMountPoint() string {
+	return s.mountPoint
 }

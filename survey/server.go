@@ -18,16 +18,18 @@ import (
 
 const (
 	maxQueueSize    = 10000
-	rateLimitPerMin = 30
+	rateLimitPerSec = 10
 )
 
 type stateUpdate struct {
 	MarshaledSurvey []byte
 }
 
-type server struct {
-	logger *zap.SugaredLogger
-	rpo    *repo.Repo
+type SurveyServer struct {
+	logger     *zap.SugaredLogger
+	rpo        *repo.Repo
+	router     *chi.Mux
+	mountPoint string
 	// needed to determine ws protocol (ws vs. wss)
 	tls bool
 	// state is the current state of the survey
@@ -41,42 +43,52 @@ type server struct {
 	numConnectionsMessageQueue chan uint32
 }
 
-func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo, config *Config) (*server, chi.Router, error) {
-	s := &server{
-		logger:                     logger,
-		rpo:                        rpo,
-		clients:                    make(map[*websocket.Conn]bool),
-		surveyMessageQueue:         make(chan stateUpdate, maxQueueSize),
-		numConnectionsMessageQueue: make(chan uint32, maxQueueSize),
-		tls:                        config.Tls,
-	}
+func (s *SurveyServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo.Repo) error {
+	s.mountPoint = mountPoint
+	s.logger = logger
+	s.rpo = rpo
+	s.router = chi.NewRouter()
 
-	var err error
+	s.clients = make(map[*websocket.Conn]bool)
+	s.surveyMessageQueue = make(chan stateUpdate, maxQueueSize)
+	s.numConnectionsMessageQueue = make(chan uint32, maxQueueSize)
+
+	config, err := newConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create config: %w", err)
+	}
+	s.tls = config.Tls
+
 	s.state, err = parseSurveyFromYAML(assets.SurveyYAML)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse survey.yaml: %w", err)
+		return fmt.Errorf("failed to parse survey.yaml: %w", err)
 	}
 
-	r := chi.NewRouter()
-
-	r.Group(func(r chi.Router) {
+	s.router.Group(func(r chi.Router) {
 		r.Use(httprate.Limit(
-			rateLimitPerMin,
+			rateLimitPerSec,
 			1*time.Second,
 			httprate.WithKeyFuncs(httprate.KeyByIP),
 		))
 		r.HandleFunc("/update", s.updateHandler)
 	})
-	r.HandleFunc("/", s.indexHandler)
-	r.HandleFunc("/ws", s.wsHandler)
-	r.Handle("/static/*", handling.StaticHandler(http.FileServer(http.FS(assets.Static)), "/survey"))
+	s.router.HandleFunc("/", s.indexHandler)
+	s.router.HandleFunc("/ws", s.wsHandler)
+	s.router.Handle("/static/*", handling.StaticHandler(http.FileServer(http.FS(assets.Static)), "/survey"))
 
+	// restore state from db
+	err = s.restoreState()
+	if err != nil {
+		return fmt.Errorf("failed to restore state: %w", err)
+	}
+
+	// start the websocket message handler
 	go s.handleWsMessages()
 
-	return s, r, nil
+	return nil
 }
 
-func (s *server) RestoreState() error {
+func (s *SurveyServer) restoreState() error {
 	existingState, err := s.rpo.GetSurveyState(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to get survey state: %w", err)
@@ -86,4 +98,12 @@ func (s *server) RestoreState() error {
 		return fmt.Errorf("failed to update state: %w", err)
 	}
 	return nil
+}
+
+func (s *SurveyServer) GetRouter() chi.Router {
+	return s.router
+}
+
+func (s *SurveyServer) GetMountPoint() string {
+	return s.mountPoint
 }

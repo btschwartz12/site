@@ -11,24 +11,34 @@ import (
 	"github.com/btschwartz12/site/internal/repo"
 )
 
-type server struct {
-	logger *zap.SugaredLogger
-	rpo    *repo.Repo
+type BaseServer struct {
+	logger     *zap.SugaredLogger
+	rpo        *repo.Repo
+	router     *chi.Mux
+	mountPoint string
 }
 
-func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo) (*server, chi.Router, error) {
-	s := &server{
-		logger: logger,
-		rpo:    rpo,
-	}
-	r := chi.NewRouter()
-	r.HandleFunc("/", s.indexHandler)
-	r.Handle("/static/*", handling.StaticHandler(http.FileServer(http.FS(assets.Static)), ""))
+func (s *BaseServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo.Repo) error {
+	s.logger = logger
+	s.rpo = rpo
+	s.mountPoint = mountPoint
+	s.router = chi.NewRouter()
+
+	s.router.HandleFunc("/", s.indexHandler)
+	s.router.Handle("/static/*", handling.StaticHandler(http.FileServer(http.FS(assets.Static)), ""))
 
 	// my old stuff
-	r.Handle("/resume*", http.RedirectHandler("/static/resume.pdf", http.StatusFound))
-	r.Handle("/portfolio", delayRedirectHandler("https://old-portfolio.btschwartz.com/portfolio"))
-	r.Handle("/portfolio/*", delayRedirectHandler("https://old-portfolio.btschwartz.com/portfolio"))
+	s.router.Handle("/resume*", http.RedirectHandler("/static/resume.pdf", http.StatusFound))
+	s.router.Handle("/portfolio", delayRedirectHandler("https://old-portfolio.btschwartz.com/portfolio"))
+	s.router.Handle("/portfolio/*", delayRedirectHandler("https://old-portfolio.btschwartz.com/portfolio"))
 
-	return s, r, nil
+	return nil
+}
+
+func (s *BaseServer) GetRouter() chi.Router {
+	return s.router
+}
+
+func (s *BaseServer) GetMountPoint() string {
+	return s.mountPoint
 }

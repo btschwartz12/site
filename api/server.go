@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,35 +12,55 @@ import (
 	"github.com/btschwartz12/site/internal/repo"
 )
 
-type server struct {
+type ApiServer struct {
+	router     *chi.Mux
+	mountPoint string
+}
+
+type handler struct {
 	logger *zap.SugaredLogger
 	rpo    *repo.Repo
 	token  string
 }
 
-func NewServer(logger *zap.SugaredLogger, rpo *repo.Repo, config *Config) (*server, chi.Router, error) {
-	s := &server{
+func (s *ApiServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo.Repo) error {
+	s.mountPoint = mountPoint
+	s.router = chi.NewRouter()
+
+	config, err := newConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create config: %w", err)
+	}
+
+	h := handler{
 		logger: logger,
 		rpo:    rpo,
 		token:  config.Token,
 	}
 
-	r := chi.NewRouter()
-	r.Get("/", http.RedirectHandler("/api/swagger/index.html", http.StatusFound).ServeHTTP)
-	r.Get("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+	s.router.Get("/", http.RedirectHandler("/api/swagger/index.html", http.StatusFound).ServeHTTP)
+	s.router.Get("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(swagger.SwaggerJSON)
 	})
-	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/api/swagger.json")))
+	s.router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/api/swagger.json")))
 
-	r.Group(func(r chi.Router) {
-		r.Use(s.tokenMiddleware)
-		r.Get("/visitors", s.getVisitorsHandler)
-		r.Get("/pics", s.getPicturesHandler)
-		r.Post("/pics/upload", s.uploadPictureHandler)
-		r.Delete("/pics/delete/{id}", s.deletePictureHandler)
-		r.Put("/pics/update_likes/{id}", s.updateLikesHandler)
+	s.router.Group(func(r chi.Router) {
+		r.Use(h.tokenMiddleware)
+		r.Get("/visitors", h.getVisitorsHandler)
+		r.Get("/pics", h.getPicturesHandler)
+		r.Post("/pics/upload", h.uploadPictureHandler)
+		r.Delete("/pics/delete/{id}", h.deletePictureHandler)
+		r.Put("/pics/update_likes/{id}", h.updateLikesHandler)
 	})
 
-	return s, r, nil
+	return nil
+}
+
+func (s *ApiServer) GetRouter() chi.Router {
+	return s.router
+}
+
+func (s *ApiServer) GetMountPoint() string {
+	return s.mountPoint
 }

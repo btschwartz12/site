@@ -49,7 +49,7 @@ type encounter struct {
 	ShinyDenom    int
 }
 
-func (s *server) getEncounter() *encounter {
+func (s *PokeServer) getEncounter() *encounter {
 	shinyDenom := s.getShinyOddsDenom()
 	shinyChance := 1 / float64(shinyDenom)
 	shiny := rand.Float64() < shinyChance
@@ -74,7 +74,7 @@ func (s *server) getEncounter() *encounter {
 
 // getShinyOddsDenom returns the denominator of the odds of
 // encountering a shiny pokemon.
-func (s *server) getShinyOddsDenom() int {
+func (s *PokeServer) getShinyOddsDenom() int {
 	dailyDenoms := map[string]int{
 		"Sunday":    1 << 9,
 		"Monday":    1 << 8,

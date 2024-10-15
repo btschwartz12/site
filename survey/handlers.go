@@ -42,7 +42,7 @@ type optionData struct {
 	Selected bool
 }
 
-func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *SurveyServer) indexHandler(w http.ResponseWriter, r *http.Request) {
 	templateData := templateData{
 		SurveyData:         s.getSurveyTemplateData(),
 		SurveyUpdateCode:   byte(surveyUpdateCode),
@@ -61,7 +61,7 @@ func (s *server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) getSurveyTemplateData() surveyTemplateData {
+func (s *SurveyServer) getSurveyTemplateData() surveyTemplateData {
 	templateData := surveyTemplateData{
 		Version: s.state.version,
 	}

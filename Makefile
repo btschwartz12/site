@@ -8,7 +8,7 @@ sqlc:
 	cd internal/repo/db && sqlc generate
 
 run-server: swagger sqlc server 
-	godotenv -f .env ./server --port 8080 --dev
+	godotenv -f .env ./server --port 8080 --dev-logging
 
 clean:
 	rm -f server
