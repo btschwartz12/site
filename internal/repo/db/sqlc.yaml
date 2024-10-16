@@ -6,6 +6,7 @@ sql:
       - "sql/visitors.sql"
       - "sql/pictures.sql"
       - "sql/survey.sql"
+      - "sql/drive.sql"
     gen:
       go:
         package: "db"

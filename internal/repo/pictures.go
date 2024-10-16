@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	pictureUploadDir = "pictures"
-	maxUploadMb      = 5
-	maxUploadSize    = maxUploadMb << 20
+	pictureUploadDir     = "pictures"
+	maxPictureUploadMb   = 5
+	maxPictureUploadSize = maxPictureUploadMb << 20
 )
 
 var (
@@ -58,10 +58,10 @@ func (r *Repo) InsertPicture(
 		return nil, fmt.Errorf("storage full")
 	}
 
-	if header.Size > maxUploadSize {
-		return nil, fmt.Errorf("file too large (max %d MB)", maxUploadMb)
+	if header.Size > maxPictureUploadSize {
+		return nil, fmt.Errorf("file too large (max %d MB)", maxPictureUploadMb)
 	}
-	r.logger.Infow("uploading picture", "size", header.Size, "max", maxUploadSize)
+	r.logger.Infow("uploading picture", "size", header.Size, "max", maxPictureUploadSize)
 
 	ext := filepath.Ext(header.Filename)
 	if !allowedExtensionsRe.MatchString(ext) {

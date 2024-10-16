@@ -52,6 +52,10 @@ func (s *ApiServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo
 		r.Post("/pics/upload", h.uploadPictureHandler)
 		r.Delete("/pics/delete/{id}", h.deletePictureHandler)
 		r.Put("/pics/update_likes/{id}", h.updateLikesHandler)
+		r.Post("/drive/upload", h.uploadFileHandler)
+		r.Get("/drive/files", h.getFilesHandler)
+		r.Get("/drive/files/{id}", h.getFileHandler)
+		r.Put("/drive/files/{id}", h.updateFileExpiresHandler)
 	})
 
 	return nil

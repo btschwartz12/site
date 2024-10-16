@@ -7,6 +7,21 @@ definitions:
       num_likes:
         type: integer
     type: object
+  repo.File:
+    properties:
+      expires:
+        type: string
+      extension:
+        type: string
+      notes:
+        type: string
+      pit:
+        type: string
+      url:
+        type: string
+      uuid:
+        type: string
+    type: object
   repo.Picture:
     properties:
       author:
@@ -51,6 +66,96 @@ info:
   title: An API
   version: "1.0"
 paths:
+  /api/drive/files:
+    get:
+      description: Get all files
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.File'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get all files
+      tags:
+      - drive
+  /api/drive/files/{id}:
+    get:
+      description: Get a file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.File'
+      security:
+      - Bearer: []
+      summary: Get a file
+      tags:
+      - drive
+    put:
+      description: Update a file's expiration
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New expiration
+        in: formData
+        name: expires
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.File'
+      security:
+      - Bearer: []
+      summary: Update a file's expiration
+      tags:
+      - drive
+  /api/drive/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file
+      parameters:
+      - description: File
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Notes
+        in: formData
+        name: notes
+        required: true
+        type: string
+      - description: Expiration
+        in: formData
+        name: expires
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.File'
+      security:
+      - Bearer: []
+      summary: Upload a file
+      tags:
+      - drive
   /api/pics:
     get:
       description: Get pictures

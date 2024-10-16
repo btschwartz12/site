@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type File struct {
+	Uuid      string
+	Url       string
+	Notes     string
+	Extension string
+	Expires   time.Time
+	Pit       time.Time
+}
+
 type Picture struct {
 	ID          int64
 	Author      string
