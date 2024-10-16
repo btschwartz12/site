@@ -10,6 +10,7 @@ import (
 
 	"github.com/btschwartz12/site/api"
 	"github.com/btschwartz12/site/base"
+	"github.com/btschwartz12/site/drive"
 	"github.com/btschwartz12/site/internal/proxy"
 	"github.com/btschwartz12/site/internal/repo"
 	"github.com/btschwartz12/site/pics"
@@ -63,6 +64,7 @@ func main() {
 		"/survey": &survey.SurveyServer{},
 		"/pics":   &pics.PicsServer{},
 		"/api":    &api.ApiServer{},
+		"/drive":  &drive.DriveServer{},
 	}
 	for mp, a := range apps {
 		err = a.Init(mp, logger, rpo)

@@ -40,6 +40,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/drive/files/permalinks": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get all permalinks",
+                "tags": [
+                    "drive"
+                ],
+                "summary": "Get all permalinks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.Permalink"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/drive/files/permalinks/{id}/": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Serve a permalink",
+                "tags": [
+                    "drive"
+                ],
+                "summary": "Serve a permalink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Permalink ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/drive/files/{id}": {
             "get": {
                 "security": [
@@ -69,30 +122,32 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
+            }
+        },
+        "/api/drive/files/{id}/permalink": {
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Update a file's expiration",
+                "description": "Generate a permalink",
                 "tags": [
                     "drive"
                 ],
-                "summary": "Update a file's expiration",
+                "summary": "Generate a permalink",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "File ID",
-                        "name": "id",
-                        "in": "path",
+                        "name": "file_id",
+                        "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "New expiration",
-                        "name": "expires",
+                        "description": "Duration (300s, 2h45m, etc.)",
+                        "name": "duration",
                         "in": "formData",
                         "required": true
                     }
@@ -101,7 +156,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/repo.File"
+                            "$ref": "#/definitions/repo.Permalink"
                         }
                     }
                 }
@@ -137,13 +192,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Notes",
                         "name": "notes",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Expiration",
-                        "name": "expires",
                         "in": "formData",
                         "required": true
                     }
@@ -348,9 +396,6 @@ const docTemplate = `{
         "repo.File": {
             "type": "object",
             "properties": {
-                "expires": {
-                    "type": "string"
-                },
                 "extension": {
                     "type": "string"
                 },
@@ -361,6 +406,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.Permalink": {
+            "type": "object",
+            "properties": {
+                "durationSeconds": {
+                    "type": "integer"
+                },
+                "expires": {
+                    "type": "string"
+                },
+                "file": {
+                    "$ref": "#/definitions/repo.File"
+                },
+                "pit": {
                     "type": "string"
                 },
                 "uuid": {

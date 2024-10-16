@@ -12,7 +12,7 @@ import (
 
 const getAllFiles = `-- name: GetAllFiles :many
 SELECT
-    uuid, url, notes, extension, expires, pit
+    uuid, url, notes, extension, pit
 FROM
     files
 `
@@ -31,6 +31,41 @@ func (q *Queries) GetAllFiles(ctx context.Context) ([]File, error) {
 			&i.Url,
 			&i.Notes,
 			&i.Extension,
+			&i.Pit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllPermalinks = `-- name: GetAllPermalinks :many
+SELECT
+    uuid, file_uuid, duration_seconds, expires, pit
+FROM
+    permalinks
+`
+
+func (q *Queries) GetAllPermalinks(ctx context.Context) ([]Permalink, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPermalinks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Permalink
+	for rows.Next() {
+		var i Permalink
+		if err := rows.Scan(
+			&i.Uuid,
+			&i.FileUuid,
+			&i.DurationSeconds,
 			&i.Expires,
 			&i.Pit,
 		); err != nil {
@@ -49,7 +84,7 @@ func (q *Queries) GetAllFiles(ctx context.Context) ([]File, error) {
 
 const getFile = `-- name: GetFile :one
 SELECT
-    uuid, url, notes, extension, expires, pit
+    uuid, url, notes, extension, pit
 FROM
     files
 WHERE
@@ -64,6 +99,27 @@ func (q *Queries) GetFile(ctx context.Context, uuid string) (File, error) {
 		&i.Url,
 		&i.Notes,
 		&i.Extension,
+		&i.Pit,
+	)
+	return i, err
+}
+
+const getPermalink = `-- name: GetPermalink :one
+SELECT
+    uuid, file_uuid, duration_seconds, expires, pit
+FROM
+    permalinks
+WHERE
+    uuid = ?
+`
+
+func (q *Queries) GetPermalink(ctx context.Context, uuid string) (Permalink, error) {
+	row := q.db.QueryRowContext(ctx, getPermalink, uuid)
+	var i Permalink
+	err := row.Scan(
+		&i.Uuid,
+		&i.FileUuid,
+		&i.DurationSeconds,
 		&i.Expires,
 		&i.Pit,
 	)
@@ -72,11 +128,11 @@ func (q *Queries) GetFile(ctx context.Context, uuid string) (File, error) {
 
 const insertFile = `-- name: InsertFile :one
 INSERT INTO
-    files (uuid, url, notes, extension, expires)
+    files (uuid, url, notes, extension)
 VALUES
-    (?, ?, ?, ?, ?)
+    (?, ?, ?, ?)
 RETURNING
-    uuid, url, notes, extension, expires, pit
+    uuid, url, notes, extension, pit
 `
 
 type InsertFileParams struct {
@@ -84,7 +140,6 @@ type InsertFileParams struct {
 	Url       string
 	Notes     string
 	Extension string
-	Expires   time.Time
 }
 
 func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (File, error) {
@@ -93,7 +148,6 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (File, e
 		arg.Url,
 		arg.Notes,
 		arg.Extension,
-		arg.Expires,
 	)
 	var i File
 	err := row.Scan(
@@ -101,36 +155,39 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (File, e
 		&i.Url,
 		&i.Notes,
 		&i.Extension,
-		&i.Expires,
 		&i.Pit,
 	)
 	return i, err
 }
 
-const updateFileExpires = `-- name: UpdateFileExpires :one
-UPDATE
-    files
-SET
-    expires = ?
-WHERE
-    uuid = ?
+const insertPermalink = `-- name: InsertPermalink :one
+INSERT INTO
+    permalinks (uuid, file_uuid, duration_seconds, expires)
+VALUES
+    (?, ?, ?, ?)
 RETURNING
-    uuid, url, notes, extension, expires, pit
+    uuid, file_uuid, duration_seconds, expires, pit
 `
 
-type UpdateFileExpiresParams struct {
-	Expires time.Time
-	Uuid    string
+type InsertPermalinkParams struct {
+	Uuid            string
+	FileUuid        string
+	DurationSeconds int64
+	Expires         time.Time
 }
 
-func (q *Queries) UpdateFileExpires(ctx context.Context, arg UpdateFileExpiresParams) (File, error) {
-	row := q.db.QueryRowContext(ctx, updateFileExpires, arg.Expires, arg.Uuid)
-	var i File
+func (q *Queries) InsertPermalink(ctx context.Context, arg InsertPermalinkParams) (Permalink, error) {
+	row := q.db.QueryRowContext(ctx, insertPermalink,
+		arg.Uuid,
+		arg.FileUuid,
+		arg.DurationSeconds,
+		arg.Expires,
+	)
+	var i Permalink
 	err := row.Scan(
 		&i.Uuid,
-		&i.Url,
-		&i.Notes,
-		&i.Extension,
+		&i.FileUuid,
+		&i.DurationSeconds,
 		&i.Expires,
 		&i.Pit,
 	)

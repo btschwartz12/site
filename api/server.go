@@ -55,7 +55,9 @@ func (s *ApiServer) Init(mountPoint string, logger *zap.SugaredLogger, rpo *repo
 		r.Post("/drive/upload", h.uploadFileHandler)
 		r.Get("/drive/files", h.getFilesHandler)
 		r.Get("/drive/files/{id}", h.getFileHandler)
-		r.Put("/drive/files/{id}", h.updateFileExpiresHandler)
+		r.Post("/drive/files/{id}/permalink", h.generatePermalinkHandler)
+		r.Get("/drive/files/permalinks", h.getPermalinksHandler)
+		r.Get("/drive/files/permalinks/{id}/", h.servePermalinkHandler)
 	})
 
 	return nil

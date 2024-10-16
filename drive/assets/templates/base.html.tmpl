@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<style>
+body { background-color: black; color: white; font-family: 'Courier New', Courier, monospace; font-size: 17px; }
+p { display: block; max-width: 30ch; white-space: break-spaces; word-wrap: break-word; }
+a { color: #a9e1ff; text-decoration: none; }
+</style>
+
+<body>
+    <h1>File Upload</h1>
+    <form action="/drive/upload" method="post" enctype="multipart/form-data">
+        <label for="file">Select file:</label><br>
+        <input type="file" name="file" id="file"><br><br>
+        <label for="notes">Notes:</label><br>
+        <textarea name="notes" id="notes" rows="4" cols="50"></textarea><br><br>
+        <input type="submit" value="Upload File">
+    </form>
+
+    <h1>Generate Permalink</h1>
+    <form action="/drive/generate_permalink" method="post">
+        <label for="file_id">File ID:</label><br>
+        <input type="text" name="file_id" id="file_id"><br><br>
+        <label for="duration">Duration (e.g., 300s, 2h45m):</label><br>
+        <input type="text" name="duration" id="duration"><br><br>
+        <input type="submit" value="Generate Permalink">
+    </form>
+</body>
+</html>

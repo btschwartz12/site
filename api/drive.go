@@ -1,8 +1,11 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -17,7 +20,6 @@ import (
 // @Produce json
 // @Param file formData file true "File"
 // @Param notes formData string true "Notes"
-// @Param expires formData string true "Expiration"
 // @Router /api/drive/upload [post]
 // @Security Bearer
 // @Success 200 {object} repo.File
@@ -36,19 +38,7 @@ func (s *handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expires := r.FormValue("expires")
-	if expires == "" {
-		http.Error(w, "expires is required", http.StatusBadRequest)
-		return
-	}
-	t, err := time.Parse(time.RFC3339, expires)
-	if err != nil {
-		s.logger.Errorw("error parsing time", "error", err)
-		http.Error(w, "invalid time format", http.StatusBadRequest)
-		return
-	}
-
-	f, err := s.rpo.InsertFile(r.Context(), file, header, t, notes)
+	f, err := s.rpo.InsertFile(r.Context(), file, header, notes)
 	if err != nil {
 		if strings.Contains(err.Error(), "file too large") {
 			http.Error(w, "File Too Large", http.StatusBadRequest)
@@ -93,46 +83,6 @@ func (s *handler) getFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// updateFileExpiresHandler godoc
-// @Summary Update a file's expiration
-// @Description Update a file's expiration
-// @Tags drive
-// @Param id path string true "File ID"
-// @Param expires formData string true "New expiration"
-// @Router /api/drive/files/{id} [put]
-// @Security Bearer
-// @Success 200 {object} repo.File
-func (s *handler) updateFileExpiresHandler(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	expires := r.FormValue("expires")
-	if expires == "" {
-		http.Error(w, "expires is required", http.StatusBadRequest)
-		return
-	}
-	t, err := time.Parse(time.RFC3339, expires)
-	if err != nil {
-		http.Error(w, "invalid time format", http.StatusBadRequest)
-		return
-	}
-
-	f, err := s.rpo.UpdateFileExpires(r.Context(), id, t)
-	if err != nil {
-		s.logger.Errorw("error updating file expiration", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(f); err != nil {
-		s.logger.Errorw("error encoding picture", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
-}
-
 // getFilesHandler godoc
 // @Summary Get all files
 // @Description Get all files
@@ -157,4 +107,111 @@ func (s *handler) getFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
+}
+
+// generatePermalinkHandler godoc
+// @Summary Generate a permalink
+// @Description Generate a permalink
+// @Tags drive
+// @Param file_id formData string true "File ID"
+// @Param duration formData string true "Duration (300s, 2h45m, etc.)"
+// @Router /api/drive/files/{id}/permalink [post]
+// @Security Bearer
+// @Success 200 {object} repo.Permalink
+func (s *handler) generatePermalinkHandler(w http.ResponseWriter, r *http.Request) {
+	fileId := chi.URLParam(r, "id")
+	if fileId == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	dur := r.FormValue("duration_seconds")
+	if dur == "" {
+		http.Error(w, "duration_seconds is required", http.StatusBadRequest)
+		return
+	}
+
+	duration, err := time.ParseDuration(dur)
+	if err != nil {
+		http.Error(w, "invalid duration: must be in correct format (300s, 2h45m, etc.)", http.StatusBadRequest)
+		return
+	}
+
+	p, err := s.rpo.InsertPermalink(r.Context(), fileId, int64(duration.Seconds()))
+	if err != nil {
+		s.logger.Errorw("error generating permalink", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.MarshalIndent(p, "", " \t")
+	if err != nil {
+		s.logger.Errorw("error marshalling permalink", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+}
+
+// getPermalinksHandler godoc
+// @Summary Get all permalinks
+// @Description Get all permalinks
+// @Tags drive
+// @Router /api/drive/files/permalinks [get]
+// @Security Bearer
+// @Success 200 {array} repo.Permalink
+func (s *handler) getPermalinksHandler(w http.ResponseWriter, r *http.Request) {
+	permalinks, err := s.rpo.GetAllPermalinks(r.Context())
+	if err != nil {
+		s.logger.Errorw("error getting permalinks", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.MarshalIndent(permalinks, "", " \t")
+	if err != nil {
+		s.logger.Errorw("error marshalling permalinks", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+}
+
+// servePermalinkHandler godoc
+// @Summary Serve a permalink
+// @Description Serve a permalink
+// @Tags drive
+// @Param id path string true "Permalink ID"
+// @Router /api/drive/files/permalinks/{id}/ [get]
+// @Security Bearer
+// @Success 200
+func (s *handler) servePermalinkHandler(w http.ResponseWriter, r *http.Request) {
+	permalinkId := chi.URLParam(r, "id")
+	if permalinkId == "" {
+		http.Error(w, "permalink_id is required", http.StatusBadRequest)
+		return
+	}
+
+	p, err := s.rpo.GetPermalink(r.Context(), permalinkId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "permalink not found", http.StatusNotFound)
+			return
+		}
+		s.logger.Errorw("error getting permalink", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := os.Stat(p.File.Url); os.IsNotExist(err) {
+		s.logger.Errorw("error getting file", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.ServeFile(w, r, p.File.Url)
 }

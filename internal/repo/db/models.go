@@ -14,8 +14,15 @@ type File struct {
 	Url       string
 	Notes     string
 	Extension string
-	Expires   time.Time
 	Pit       time.Time
+}
+
+type Permalink struct {
+	Uuid            string
+	FileUuid        string
+	DurationSeconds int64
+	Expires         time.Time
+	Pit             time.Time
 }
 
 type Picture struct {

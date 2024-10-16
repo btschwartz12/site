@@ -9,8 +9,6 @@ definitions:
     type: object
   repo.File:
     properties:
-      expires:
-        type: string
       extension:
         type: string
       notes:
@@ -18,6 +16,19 @@ definitions:
       pit:
         type: string
       url:
+        type: string
+      uuid:
+        type: string
+    type: object
+  repo.Permalink:
+    properties:
+      durationSeconds:
+        type: integer
+      expires:
+        type: string
+      file:
+        $ref: '#/definitions/repo.File'
+      pit:
         type: string
       uuid:
         type: string
@@ -100,27 +111,60 @@ paths:
       summary: Get a file
       tags:
       - drive
-    put:
-      description: Update a file's expiration
+  /api/drive/files/{id}/permalink:
+    post:
+      description: Generate a permalink
       parameters:
       - description: File ID
-        in: path
-        name: id
+        in: formData
+        name: file_id
         required: true
         type: string
-      - description: New expiration
+      - description: Duration (300s, 2h45m, etc.)
         in: formData
-        name: expires
+        name: duration
         required: true
         type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/repo.File'
+            $ref: '#/definitions/repo.Permalink'
       security:
       - Bearer: []
-      summary: Update a file's expiration
+      summary: Generate a permalink
+      tags:
+      - drive
+  /api/drive/files/permalinks:
+    get:
+      description: Get all permalinks
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.Permalink'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get all permalinks
+      tags:
+      - drive
+  /api/drive/files/permalinks/{id}/:
+    get:
+      description: Serve a permalink
+      parameters:
+      - description: Permalink ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - Bearer: []
+      summary: Serve a permalink
       tags:
       - drive
   /api/drive/upload:
@@ -137,11 +181,6 @@ paths:
       - description: Notes
         in: formData
         name: notes
-        required: true
-        type: string
-      - description: Expiration
-        in: formData
-        name: expires
         required: true
         type: string
       produces:

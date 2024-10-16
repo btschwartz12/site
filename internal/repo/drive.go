@@ -2,6 +2,10 @@ package repo
 
 import (
 	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -24,8 +28,15 @@ type File struct {
 	Url       string
 	Notes     string
 	Extension string
-	Expires   time.Time
 	Pit       time.Time
+}
+
+type Permalink struct {
+	Uuid            string
+	File            *File
+	DurationSeconds int64
+	Expires         time.Time
+	Pit             time.Time
 }
 
 func (p *File) fromDb(row *db.File) {
@@ -33,15 +44,27 @@ func (p *File) fromDb(row *db.File) {
 	p.Url = row.Url
 	p.Notes = row.Notes
 	p.Extension = row.Extension
-	p.Expires = row.Expires
 	p.Pit = row.Pit
+}
+
+func (r *Repo) permalinkFromDb(row *db.Permalink) (*Permalink, error) {
+	f, err := r.GetFile(context.Background(), row.FileUuid)
+	if err != nil {
+		return nil, fmt.Errorf("error getting file: %w", err)
+	}
+	return &Permalink{
+		Uuid:            row.Uuid,
+		File:            f,
+		DurationSeconds: row.DurationSeconds,
+		Expires:         row.Expires,
+		Pit:             row.Pit,
+	}, nil
 }
 
 func (r *Repo) InsertFile(
 	ctx context.Context,
 	file multipart.File,
 	header *multipart.FileHeader,
-	expires time.Time,
 	notes string,
 ) (*File, error) {
 	if r.storageFull() {
@@ -63,7 +86,6 @@ func (r *Repo) InsertFile(
 		Url:       url,
 		Notes:     notes,
 		Extension: ext,
-		Expires:   expires,
 	}
 	q := db.New(r.db)
 	row, err := q.InsertFile(ctx, params)
@@ -76,6 +98,96 @@ func (r *Repo) InsertFile(
 	return f, nil
 }
 
+func (r *Repo) GetFile(ctx context.Context, uuid string) (*File, error) {
+	q := db.New(r.db)
+	row, err := q.GetFile(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("error getting file: %w", err)
+	}
+	f := &File{}
+	f.fromDb(&row)
+	return f, nil
+}
+
+func (r *Repo) GetAllFiles(ctx context.Context) ([]File, error) {
+	q := db.New(r.db)
+	rows, err := q.GetAllFiles(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting files: %w", err)
+	}
+	files := make([]File, len(rows))
+	for i, row := range rows {
+		files[i].fromDb(&row)
+	}
+	return files, nil
+}
+
+func (r *Repo) InsertPermalink(ctx context.Context, fileUuid string, durationSeconds int64) (*Permalink, error) {
+	_, err := r.GetFile(ctx, fileUuid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("file not found")
+		} else {
+			return nil, fmt.Errorf("error getting file: %w", err)
+		}
+	}
+
+	uuid := ""
+	for {
+		bytes := make([]byte, 3)
+		_, err = rand.Read(bytes)
+		if err != nil {
+			return nil, fmt.Errorf("error generating uuid: %w", err)
+		}
+		uuid = hex.EncodeToString(bytes)
+		_, err = r.GetPermalink(ctx, uuid)
+		if errors.Is(err, sql.ErrNoRows) {
+			break
+		}
+		r.logger.Warnw("uuid collision", "uuid", uuid)
+	}
+
+	params := db.InsertPermalinkParams{
+		Uuid:            uuid,
+		FileUuid:        fileUuid,
+		DurationSeconds: durationSeconds,
+		Expires:         time.Now().Add(time.Duration(durationSeconds) * time.Second),
+	}
+	q := db.New(r.db)
+	row, err := q.InsertPermalink(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("error inserting permalink: %w", err)
+	}
+	return r.permalinkFromDb(&row)
+}
+
+func (r *Repo) GetPermalink(ctx context.Context, uuid string) (*Permalink, error) {
+	q := db.New(r.db)
+	row, err := q.GetPermalink(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("error getting permalink: %w", err)
+	}
+	return r.permalinkFromDb(&row)
+}
+
+func (r *Repo) GetAllPermalinks(ctx context.Context) ([]Permalink, error) {
+	q := db.New(r.db)
+	rows, err := q.GetAllPermalinks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting permalinks: %w", err)
+	}
+	permalinks := make([]Permalink, len(rows))
+	for i, row := range rows {
+		p, err := r.permalinkFromDb(&row)
+		if err != nil {
+			return nil, fmt.Errorf("error getting permalink: %w", err)
+		}
+		permalinks[i] = *p
+	}
+	return permalinks, nil
+}
+
+// TODO use external file server
 func (r *Repo) getFileUrl(ctx context.Context, uuid string, file multipart.File,
 	header *multipart.FileHeader) (string, error) {
 	ext := filepath.Ext(header.Filename)
@@ -90,45 +202,4 @@ func (r *Repo) getFileUrl(ctx context.Context, uuid string, file multipart.File,
 		return "", fmt.Errorf("error copying file content: %w", err)
 	}
 	return path, nil
-}
-
-func (r *Repo) GetFile(ctx context.Context, uuid string) (*File, error) {
-	q := db.New(r.db)
-	row, err := q.GetFile(ctx, uuid)
-	if err != nil {
-		return nil, fmt.Errorf("error getting file: %w", err)
-	}
-	f := &File{}
-	f.fromDb(&row)
-	return f, nil
-}
-
-func (r *Repo) UpdateFileExpires(ctx context.Context, uuid string, expires time.Time) (*File, error) {
-	q := db.New(r.db)
-	row, err := q.UpdateFileExpires(ctx, db.UpdateFileExpiresParams{
-		Expires: expires,
-		Uuid:    uuid,
-	})
-	if err != nil {
-		r.logger.Errorw("error updating file expires", "error", err)
-		return nil, fmt.Errorf("error updating file expires: %w", err)
-	}
-	f := &File{}
-	f.fromDb(&row)
-	return f, nil
-}
-
-func (r *Repo) GetAllFiles(ctx context.Context) ([]*File, error) {
-	q := db.New(r.db)
-	rows, err := q.GetAllFiles(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting all files: %w", err)
-	}
-	files := make([]*File, 0, len(rows))
-	for i := range rows {
-		f := &File{}
-		f.fromDb(&rows[i])
-		files = append(files, f)
-	}
-	return files, nil
 }
